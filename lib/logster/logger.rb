@@ -15,18 +15,21 @@ module Logster
       @override_levels = nil
       @chained = []
       @skip_store = false
+      @mutex = Mutex.new
     end
 
     def override_level=(val)
       tid = Thread.current.object_id
 
-      ol = @override_levels
-      if val.nil? && ol && ol.key?(tid)
-        ol.delete(tid)
-        @override_levels = nil if ol.length == 0
-      elsif val
-        (@override_levels ||= {})[tid] = val
-      end
+      @mutex.synchronize {
+        ol = @override_levels
+        if val.nil? && ol && ol.key?(tid)
+          ol.delete(tid)
+          @override_levels = nil if ol.length == 0
+        elsif val
+          (@override_levels ||= {})[tid] = val
+        end
+      }
     end
 
     def chain(logger)
